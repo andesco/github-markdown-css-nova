@@ -22,33 +22,34 @@ The minimal amount of CSS to replicate the [GitHub Flavored Markdown][gfm] style
 2. Select a stylesheet:
 
    Automatic: **`github-markdown-auto.css`** \
-   
-   > automatically switches between light and dark modes: \
-   > [`@media (prefers-color-scheme)`][mozilla]
-
    Dark-only: **`github-markdown-dark.css`** \
    Light-only: **`github-markdown-light.css`**
+
+   > Automatic switches between light and dark modes using: \
+    > [`@media (prefers-color-scheme)`][mozilla]
    
    <details><summary>other available themes<br />&nbsp;</summary>
    
-   Light High Contrast: `github-markdown-light_high_contrast.css` \
-   Dark High Contrast: `github-markdown-dark_high_contrast.css` \
-   Light Colorblind: `github-markdown-light_colorblind.css` \
-   Light Colorblind High Contrast: `github-markdown-light_colorblind_high_contrt.css` \
-   Light Tritanopia: `github-markdown-light_tritanopia.css` \
-   Light Tritanopia High Contrast: `github-markdown-light_tritanopia_high_contrt.css` \
-   Dark Colorblind: `github-markdown-dark_colorblind.css` \
    Dark Colorblind High Contrast: `github-markdown-dark_colorblind_high_contrascss` \
-   Dark Tritanopia: `github-markdown-dark_tritanopia.css` \
-   Dark Tritanopia High Contrast: `github-markdown-dark_tritanopia_high_contrascss` \
+   Dark Colorblind: `github-markdown-dark_colorblind.css` \
+   Dark Dimmed High Contrast: `github-markdown-dark_dimmed_high_contrast.css` \
    Dark Dimmed: `github-markdown-dark_dimmed.css` \
-   Dark Dimmed High Contrast: `github-markdown-dark_dimmed_high_contrast.css`
+   Dark High Contrast: `github-markdown-dark_high_contrast.css` \
+   Dark Tritanopia High Contrast: `github-markdown-dark_tritanopia_high_contrascss` \
+   Dark Tritanopia: `github-markdown-dark_tritanopia.css` \
+   Light Colorblind High Contrast: `github-markdown-light_colorblind_high_contrt.css` \
+   Light Colorblind: `github-markdown-light_colorblind.css` \
+   Light High Contrast: `github-markdown-light_high_contrast.css` \
+   Light Tritanopia High Contrast: `github-markdown-light_tritanopia_high_contrt.css` \
+   Light Tritanopia: `github-markdown-light_tritanopia.css`
    
    </details>
 
 
 
-## Development: `andesco/generate-github-markdown-css`
+## Development
+
+### `generate-github-markdown-css`
 
 All stylesheets were generated using [`andesco/generate-github-markdown-css`](https://github.com/andesco/generate-github-markdown-css). This fork of [`sindresorhus/generate-github-markdown-css`](https://github.com/sindresorhus/generate-github-markdown-css) adds an optional `--include` flag which prepends `include.css` to define base styling and responsive padding:
 
@@ -75,9 +76,9 @@ for THEME in $(github-markdown-css --list) auto; do
 done
 ```
 
-### Alternative: `transform_css.py`
+### `transform_css.py`
 
-The Python script `transform_css.py` modifies the `CSS` from [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css) to generate new `CSS` for [Nova.app][nova] and other HTML-rendered Markdown.
+This Python script `transform_css.py` modifies the `CSS` from [`github-markdown-css`](https://github.com/sindresorhus/github-markdown-css) to generate new `CSS` for [Nova.app][nova] and other HTML-rendered Markdown.
 
 To process all `CSS` files in the current directory and overwrite exisiting files ending in `-nova.css`:
 ```
