@@ -1,6 +1,6 @@
 # GitHub Markdown CSS in Nova
 
-The minimal amount of CSS to replicate the [GitHub Flavored Markdown][gfm] style on `github.com` in [Nova.app](https://nova.app) on macOS.
+Markdown stylesheets for [Nova.app](https://nova.app) based on [GitHub Flavored Markdown][gfm] style.
 
 **The CSS is generated. Contributions should go to this repository:** \
 [`andesco/generate-github-markdown-css`](https://github.com/andesco/generate-github-markdown-css)
