@@ -42,17 +42,20 @@ Preview exactly how your Markdown and `readme.md` files will look on GitHub whil
 
 [GitHub Markdown Alerts][alerts] are based on the blockquote syntax that emphasize critical information. They are displayed with distinctive colors and icons to indicate the significance of the content.
 
-### Patching Nova to render Alerts
+### Patching Nova Preview to render Alerts
 
-Nova does not natively support Alerts when rendering Markdown:
+Nova does not natively support Alerts when [previewing Markdown in Nova][nova-doc]:
 
+```markdown
+<!--github markdown example-->
+> [!NOTE]
+> Example alert in Nova Preview.
 ```
-> [!NOTE] This is an example
-```
 
-> [‌!NOTE‌] This is an example.
+> [‌!NOTE‌] Example alert in Nova Preview.
 
-The included Swift script patches `PreviewRuntime.js` and `ExternalWebRuntime.js` to render Alerts when [previewing Markdown in Nova][nova-doc]:
+
+The included Swift script patches `PreviewRuntime.js` and `ExternalWebRuntime.js` to render Alerts correctly.
 
 ```bash
 swift nova-alerts.swift install   # install alert support (creates backups)
@@ -60,7 +63,7 @@ swift nova-alerts.swift status    # check installation status
 swift nova-alerts.swift restore   # restore original files from backups
 ```
 
-### Examples
+### Example Alerts
 
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
