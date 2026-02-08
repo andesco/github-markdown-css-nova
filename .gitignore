@@ -2,3 +2,12 @@ node_modules
 yarn.lock
 *-nova.css
 # !*.css
+
+# macOS
+.DS_Store
+
+# Temporary/experimental files
+*.mjs.new
+*.css.new
+*-test.js
+*-bundle-full.mjs

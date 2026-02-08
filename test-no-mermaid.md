@@ -1,6 +1,6 @@
 # Test Document Without Mermaid
 
-This file tests that Mermaid.js (2.7 MB) is not loaded when there are no Mermaid diagrams.
+This file tests that `Mermaid.js` `2.7 MB` is not loaded when there are no Mermaid diagrams.
 
 ## GitHub Markdown Alerts
 
@@ -39,15 +39,4 @@ def calculate_fibonacci(n):
     return calculate_fibonacci(n-1) + calculate_fibonacci(n-2)
 
 print(calculate_fibonacci(10))
-```
-
-## Mermaid Diagram
-
-Flowchart:
-```mermaid
-graph TD
-  A[Start] --> B{Is it working?}
-  B -->|Yes| C[End]
-  B -->|No| D[Debug]
-  D --> A
 ```
