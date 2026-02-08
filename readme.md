@@ -1,10 +1,10 @@
 # GitHub Markdown CSS: <br />User Stylesheets for Nova
 
-These Markdown stylesheets bring the style of [GitHub Flavored Markdown][gfm] on `github.com` to Markdown previews in [Nova.app](https://nova.app) — and any app that accepts [user stylesheets][mozilla-user].
+These stylesheets bring the style of [GitHub Flavored Markdown][gfm] on `github.com` to Markdown previews in [Nova.app](https://nova.app) — and any app that accepts [user stylesheets][mozilla-user].
 
 Preview exactly how your Markdown and `readme.md` files will look on GitHub while writing in Nova or your favourite app.
 
-## Markdown Stylesheets for Nova
+## GitHub Markdown Stylesheets for Nova
 
 1. Nova.app → Settings… → Workspace → Markdown Stylesheet: Custom…
 
@@ -38,37 +38,31 @@ Preview exactly how your Markdown and `readme.md` files will look on GitHub whil
       Light Tritanopia: `github-markdown-light_tritanopia.css`
     </details>
 
-## GitHub Markdown Extensions for Nova
+## GitHub Patch for Nova
 
-The included Swift script extends Nova's Markdown preview with three powerful features:
+This patch adds support for the following when [previewing Markdown][nova-doc] in Nova:
 
-1. **GitHub Markdown Alerts** - Distinctive colored callouts with icons
-2. **Syntax Highlighting** - Beautiful code highlighting using highlight.js
-3. **Mermaid Diagrams** - Render flowcharts, sequence diagrams, and more
+- **GitHub Markdown Alerts**
+- **Syntax Highlighting**
+- **Mermaid Diagrams**
 
-### Installation
-
-The script downloads necessary JavaScript libraries and patches Nova's preview runtime:
+Use the included Swift script to patch the userscript used by Nova: `ExternalWebRuntime.js`
 
 ```bash
-sudo swift nova-markdown-extensions.swift install   # install all extensions (requires sudo)
-swift nova-markdown-extensions.swift status         # check installation status
-swift nova-markdown-extensions.swift update         # update libraries without re-patching
-sudo swift nova-markdown-extensions.swift restore   # restore original files from backups
+sudo swift patch-nova.swift install   # install all extensions
+swift patch-nova.swift status          # check installation status
+swift patch-nova.swift update          # update libraries
+sudo swift patch-nova.swift restore    # restore from backups
 ```
-
-**Note:** After installation, quit and relaunch Nova for changes to take effect.
 
 ### GitHub Markdown Alerts
 
 [GitHub Markdown Alerts][alerts] are based on the blockquote syntax that emphasize critical information. They are displayed with distinctive colors and icons to indicate the significance of the content.
 
 ```markdown
-> [!NOTE]
-> Example alert in Nova Preview.
+[!NOTE]
+> Useful information that users should know, even when skimming content.
 ```
-
-### Example Alerts
 
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
@@ -89,31 +83,37 @@ sudo swift nova-markdown-extensions.swift restore   # restore original files fro
 
 Code blocks are automatically highlighted with syntax-aware coloring that adapts to your system's dark/light mode:
 
-````markdown
-```javascript
+```markdown
 function greet(name) {
-  console.log(`Hello, ${name}!`);
+  console.log(`Hello, ${name}.`);
 }
 ```
-````
 
-Supports 100+ languages including JavaScript, Python, TypeScript, Swift, Go, Rust, and more.
+```javascript
+function greet(name) {
+  console.log(`Hello, ${name}.`);
+}
+```
 
 ### Mermaid Diagrams
 
-Create flowcharts, sequence diagrams, and other visualizations directly in Markdown:
+[Mermaid](https://mermaid.js.org/) generates diagrams from text in a similar manner to Markdown.
 
-````markdown
-```mermaid
-graph TD
-  A[Start] --> B{Is it working?}
-  B -->|Yes| C[Great!]
-  B -->|No| D[Debug]
+```markdown
+graph LR
+  A[Start] --> B{Working?}
+  B --> |Yes| C[Great!]
+  B --> |No| D[Debug]
   D --> A
 ```
-````
 
-Mermaid diagrams automatically adapt to dark/light mode. See [Mermaid documentation](https://mermaid.js.org/) for all diagram types.
+```mermaid
+graph LR
+  A[Start] --> B{Working?}
+  B --> |Yes| C[Great!]
+  B --> |No| D[Debug]
+  D --> A
+```
 
 ## Development
 
@@ -172,8 +172,8 @@ The script makes the following changes to `.css` files:
      box-sizing: border-box;
      min-width: 200px;
      max-width: 980px;
-    margin: 0 auto;
-    padding: 45px;
+     margin: 0 auto;
+     padding: 45px;
    }
    @media (max-width: 767px) {
      body {

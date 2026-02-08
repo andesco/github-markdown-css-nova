@@ -41,9 +41,9 @@ def calculate_fibonacci(n):
 print(calculate_fibonacci(10))
 ```
 
-## Mermaid Diagrams
+## Mermaid Diagram
 
-Simple flowchart:
+Flowchart:
 ```mermaid
 graph TD
   A[Start] --> B{Is it working?}
@@ -51,20 +51,3 @@ graph TD
   B -->|No| D[Debug]
   D --> A
 ```
-
-Sequence diagram:
-```mermaid
-sequenceDiagram
-  Alice->>John: Hello John, how are you?
-  John-->>Alice: Great!
-  Alice-)John: See you later!
-```
-
-## Combination Test
-
-> [!TIP]
-> You can combine alerts with code blocks!
->
-> ```javascript
-> const tip = "This should be highlighted";
-> ```

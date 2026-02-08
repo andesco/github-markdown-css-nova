@@ -60,7 +60,12 @@ let alertCode = """
 """
 
 func generateExtensionCode(resourcesURL: URL) throws -> String {
-    // Read library files and base64 encode them
+    // Read library files and base64 encode them (except Mermaid - loaded from CDN when needed)
+    // Sources:
+    //   - highlight.js: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
+    //   - github.min.css: https://unpkg.com/@highlightjs/cdn-assets@11/styles/github.min.css
+    //   - github-dark.min.css: https://unpkg.com/@highlightjs/cdn-assets@11/styles/github-dark.min.css
+
     let hljsData = try Data(contentsOf: resourcesURL.appendingPathComponent("highlight.min.js"))
     let hljsB64 = hljsData.base64EncodedString()
 
@@ -70,24 +75,27 @@ func generateExtensionCode(resourcesURL: URL) throws -> String {
     let githubDarkCSSData = try Data(contentsOf: resourcesURL.appendingPathComponent("github-dark.min.css"))
     let githubDarkCSSB64 = githubDarkCSSData.base64EncodedString()
 
-    let mermaidData = try Data(contentsOf: resourcesURL.appendingPathComponent("mermaid.min.js"))
-    let mermaidB64 = mermaidData.base64EncodedString()
-
     return """
 
-    // Mermaid & Syntax Highlighting Extension (Base64 Embedded)
+    // Mermaid & Syntax Highlighting Extension
+    // Embedded libraries (base64):
+    //   - highlight.js v11: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
+    //   - GitHub CSS (light): https://unpkg.com/@highlightjs/cdn-assets@11/styles/github.min.css
+    //   - GitHub CSS (dark): https://unpkg.com/@highlightjs/cdn-assets@11/styles/github-dark.min.css
+    // CDN libraries (loaded when needed):
+    //   - Mermaid v11: https://unpkg.com/mermaid@11/dist/mermaid.min.js
     (function() {
         function loadExtensions() {
             var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Decode and inject CSS
+            // Decode and inject CSS (embedded)
             var cssB64 = isDark ? '\(githubDarkCSSB64)' : '\(githubCSSB64)';
             var css = atob(cssB64);
             var style = document.createElement('style');
             style.textContent = css;
             document.head.appendChild(style);
 
-            // Decode and inject highlight.js
+            // Decode and inject highlight.js (embedded)
             var hljsCode = atob('\(hljsB64)');
             var hljsScript = document.createElement('script');
             hljsScript.textContent = hljsCode;
@@ -102,15 +110,12 @@ func generateExtensionCode(resourcesURL: URL) throws -> String {
                 }
             }, 50);
 
-            // Load Mermaid only if page contains mermaid code blocks
+            // Load Mermaid from CDN only if page contains mermaid code blocks
             var mermaidBlocks = document.querySelectorAll('code.language-mermaid');
             if (mermaidBlocks.length > 0) {
-                var mermaidCode = atob('\(mermaidB64)');
                 var mermaidScript = document.createElement('script');
-                mermaidScript.textContent = mermaidCode;
-                document.head.appendChild(mermaidScript);
-
-                setTimeout(function() {
+                mermaidScript.src = 'https://unpkg.com/mermaid@11/dist/mermaid.min.js';
+                mermaidScript.onload = function() {
                     if (window.mermaid) {
                         mermaid.initialize({
                             startOnLoad: false,
@@ -128,7 +133,8 @@ func generateExtensionCode(resourcesURL: URL) throws -> String {
                         });
                         mermaid.run();
                     }
-                }, 100);
+                };
+                document.head.appendChild(mermaidScript);
             }
         }
         if (document.readyState === 'loading') {
@@ -146,10 +152,6 @@ struct Library {
 }
 
 let libraries: [Library] = [
-    Library(
-        url: "https://unpkg.com/mermaid@11/dist/mermaid.min.js",
-        filename: "mermaid.min.js"
-    ),
     Library(
         url: "https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js",
         filename: "highlight.min.js"
@@ -480,7 +482,7 @@ func cmdInstall() {
         print("")
         let _ = try downloadExtensions(to: resources)
         print("")
-        print("✓ Downloaded and will embed 4 libraries", color: Colors.green)
+        print("✓ Downloaded and will embed 3 libraries (Mermaid loaded from CDN when needed)", color: Colors.green)
         print("")
     } catch {
         print("✗ Failed to download libraries: \(error.localizedDescription)", color: Colors.red)
@@ -640,7 +642,7 @@ func cmdUpdate() {
     do {
         let _ = try downloadExtensions(to: resources)
         print("")
-        print("✓ Updated 4 libraries successfully", color: Colors.green)
+        print("✓ Updated 3 libraries successfully", color: Colors.green)
         print("")
         print("Note: Restart Nova for changes to take effect.", color: Colors.yellow)
     } catch {
