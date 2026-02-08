@@ -1,0 +1,79 @@
+name: Update Starry-Night Bundles
+
+on:
+  schedule:
+    # Run weekly on Mondays at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update-bundles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies and rebuild bundle
+        run: |
+          echo "Installing dependencies..."
+          npm install --save-dev esbuild @wooorm/starry-night hast-util-to-html
+
+          echo "Building IIFE bundle..."
+          node build-bundle.mjs
+
+          echo "Downloading CSS..."
+          curl -sL "https://esm.sh/@wooorm/starry-night@3/style/both.css" \
+            -o starry-night.css.new
+
+          echo "Build complete"
+
+      - name: Check for changes
+        id: check_changes
+        run: |
+          CHANGED=false
+
+          # Check bundle file
+          if [ -f "starry-night-bundle.js" ]; then
+            if ! cmp -s "starry-night-bundle.js" "starry-night-bundle.js" 2>/dev/null; then
+              echo "Bundle was rebuilt"
+              CHANGED=true
+            fi
+          else
+            echo "New bundle created"
+            CHANGED=true
+          fi
+
+          # Check CSS
+          if [ -f "starry-night.css" ]; then
+            if ! cmp -s "starry-night.css" "starry-night.css.new"; then
+              echo "CSS updated"
+              CHANGED=true
+              mv "starry-night.css.new" "starry-night.css"
+            else
+              rm "starry-night.css.new"
+            fi
+          else
+            echo "New CSS file"
+            CHANGED=true
+            mv "starry-night.css.new" "starry-night.css"
+          fi
+
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Commit and push if changed
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add starry-night-bundle.js starry-night.css package.json package-lock.json
+          git commit -m "chore: rebuild starry-night bundle from latest upstream"
+          git push
+
+      - name: No changes
+        if: steps.check_changes.outputs.changed != 'true'
+        run: echo "No updates needed - bundles are up to date"

@@ -60,62 +60,47 @@ let alertCode = """
 """
 
 func generateExtensionCode(resourcesURL: URL) throws -> String {
-    // Read library files and base64 encode them (except Mermaid - loaded from CDN when needed)
+    // Embed as base64 data URLs
     // Sources:
-    //   - highlight.js: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
-    //   - github-exact-light.css: Custom CSS with GitHub's exact Primer colors
-    //   - github-exact-dark.css: Custom CSS with GitHub's exact Primer colors
+    //   - starry-night-bundle.js: esbuild IIFE bundle with common grammars (1.3MB)
+    //   - starry-night.css: GitHub's exact CSS (6KB)
 
-    let hljsData = try Data(contentsOf: resourcesURL.appendingPathComponent("highlight.min.js"))
-    let hljsB64 = hljsData.base64EncodedString()
+    let jsData = try Data(contentsOf: resourcesURL.appendingPathComponent("starry-night-bundle.js"))
+    let jsB64 = jsData.base64EncodedString()
 
-    // Read custom GitHub exact CSS from script directory
-    let scriptDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    let githubCSSData = try Data(contentsOf: scriptDir.appendingPathComponent("github-exact-light.css"))
-    let githubCSSB64 = githubCSSData.base64EncodedString()
-
-    let githubDarkCSSData = try Data(contentsOf: scriptDir.appendingPathComponent("github-exact-dark.css"))
-    let githubDarkCSSB64 = githubDarkCSSData.base64EncodedString()
+    let cssData = try Data(contentsOf: resourcesURL.appendingPathComponent("starry-night.css"))
+    let cssB64 = cssData.base64EncodedString()
 
     return """
 
     // NOVA EXTENSIONS MANIFEST
-    // Version: 1.1.0
-    // Extensions: alerts, highlight.js, mermaid
-    // Embedded: highlight.js, github-exact-light.css, github-exact-dark.css
-    // CDN: mermaid (loaded conditionally)
-    // Colors: GitHub's exact Primer Primitives (2026)
+    // Version: 2.0.0
+    // Extensions: alerts, starry-night (GitHub's Prettylights clone), mermaid
+    // Libraries: starry-night-bundle.js (1.3MB IIFE), CSS (6KB)
+    // Highlighting: Uses GitHub's exact Prettylights output (.pl-* classes)
     // Installed: \(ISO8601DateFormatter().string(from: Date()))
 
     // Mermaid & Syntax Highlighting Extension
-    // Embedded libraries (base64 data URLs):
-    //   - highlight.js v11: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
-    //   - GitHub Exact Light CSS: Custom CSS with Primer color scales
-    //   - GitHub Exact Dark CSS: Custom CSS with Primer color scales
-    // CDN libraries (loaded when needed):
-    //   - Mermaid v11: https://unpkg.com/mermaid@11/dist/mermaid.min.js
+    // Using starry-night - open source clone of GitHub's Prettylights
     (function() {
         function loadExtensions() {
             var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Inject CSS using data URL (embedded)
+            // Load GitHub's exact CSS (embedded)
             var cssLink = document.createElement('link');
             cssLink.rel = 'stylesheet';
-            cssLink.href = 'data:text/css;base64,' + (isDark ? '\(githubDarkCSSB64)' : '\(githubCSSB64)');
+            cssLink.href = 'data:text/css;base64,\(cssB64)';
             document.head.appendChild(cssLink);
 
-            // Inject highlight.js using data URL (embedded)
-            var hljsScript = document.createElement('script');
-            hljsScript.src = 'data:text/javascript;base64,\(hljsB64)';
-            hljsScript.onload = function() {
-                if (window.hljs) {
-                    hljs.configure({ ignoreUnescapedHTML: true });
-                    document.querySelectorAll('pre code:not(.language-mermaid)').forEach(function(block) {
-                        hljs.highlightElement(block);
-                    });
+            // Load starry-night IIFE bundle
+            var starryScript = document.createElement('script');
+            starryScript.src = 'data:text/javascript;base64,\(jsB64)';
+            starryScript.onload = function() {
+                if (window.starryNightInit) {
+                    window.starryNightInit();
                 }
             };
-            document.head.appendChild(hljsScript);
+            document.head.appendChild(starryScript);
 
             // Load Mermaid from CDN only if page contains mermaid code blocks
             var mermaidBlocks = document.querySelectorAll('code.language-mermaid');
@@ -159,12 +144,9 @@ struct Library {
     let filename: String
 }
 
-let libraries: [Library] = [
-    Library(
-        url: "https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js",
-        filename: "highlight.min.js"
-    )
-]
+// Note: Bundle files are stored in the repo and auto-updated via GitHub Actions
+// No downloads needed - files are copied from script directory
+let libraries: [Library] = []
 
 enum InstallError: Error, LocalizedError {
     case downloadFailed(String)
@@ -476,16 +458,39 @@ func cmdInstall() {
         exit(1)
     }
 
-    // Download extension libraries before patching
+    // Copy bundle files from script directory to Nova Resources
     do {
-        print("Downloading extension libraries...", color: Colors.blue)
+        print("Copying extension libraries from repo...", color: Colors.blue)
         print("")
-        let _ = try downloadExtensions(to: resources)
+
+        let scriptPath = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+        let filesToCopy = ["starry-night-bundle.js", "starry-night.css"]
+
+        for filename in filesToCopy {
+            let source = scriptPath.appendingPathComponent(filename)
+            let dest = resources.appendingPathComponent(filename)
+
+            guard FileManager.default.fileExists(atPath: source.path) else {
+                print("✗ \(filename) not found in script directory", color: Colors.red)
+                print("  Please ensure bundle files are in the same directory as patch-nova.swift", color: Colors.yellow)
+                exit(1)
+            }
+
+            try? FileManager.default.removeItem(at: dest)
+            try FileManager.default.copyItem(at: source, to: dest)
+
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: dest.path),
+               let size = attrs[.size] as? Int {
+                let sizeKB = size / 1024
+                print("  ✓ Copied \(filename) (\(sizeKB) KB)", color: Colors.green)
+            }
+        }
+
         print("")
-        print("✓ Downloaded highlight.js (GitHub exact CSS embedded, Mermaid loaded from CDN when needed)", color: Colors.green)
+        print("✓ All libraries copied (1.3MB total, common grammars only)", color: Colors.green)
         print("")
     } catch {
-        print("✗ Failed to download libraries: \(error.localizedDescription)", color: Colors.red)
+        print("✗ Failed to copy libraries: \(error.localizedDescription)", color: Colors.red)
         print("Installation aborted.", color: Colors.red)
         exit(1)
     }
@@ -530,18 +535,20 @@ func cmdRestore() {
     restore(at: resources.appendingPathComponent("PreviewRuntime.js"))
     restore(at: resources.appendingPathComponent("ExternalWebRuntime.js"))
 
-    // Remove extension libraries from Resources root
-    for library in libraries {
-        let filePath = resources.appendingPathComponent(library.filename)
+    // Remove extension files from Resources root
+    let filesToRemove = ["starry-night-bundle.js", "starry-night-bundle.mjs", "starry-night.bundle.mjs",
+                         "hast-util-to-html.bundle.mjs", "starry-night.css"]
+    for filename in filesToRemove {
+        let filePath = resources.appendingPathComponent(filename)
         if FileManager.default.fileExists(atPath: filePath.path) {
             do {
                 try FileManager.default.removeItem(at: filePath)
             } catch {
-                print("⚠ Failed to remove \(library.filename): \(error.localizedDescription)", color: Colors.yellow)
+                print("⚠ Failed to remove \(filename): \(error.localizedDescription)", color: Colors.yellow)
             }
         }
     }
-    print("✓ Removed extension library files", color: Colors.green)
+    print("✓ Removed extension files", color: Colors.green)
 
     print("")
     print("✓ Restore complete!", color: Colors.green)
@@ -585,28 +592,29 @@ func cmdStatus() {
     }
 
     print("")
-    print("Extension Libraries:", color: Colors.blue)
+    print("Extension Libraries (from repo, auto-updated via GitHub Actions):", color: Colors.blue)
 
     var allFound = true
-    for library in libraries {
-        let filePath = resources.appendingPathComponent(library.filename)
+    let filesToCheck = ["starry-night-bundle.js", "starry-night.css"]
+    for filename in filesToCheck {
+        let filePath = resources.appendingPathComponent(filename)
         if FileManager.default.fileExists(atPath: filePath.path) {
             if let attrs = try? FileManager.default.attributesOfItem(atPath: filePath.path),
                let size = attrs[.size] as? Int {
                 let sizeKB = size / 1024
-                print("  ✓ \(library.filename) (\(sizeKB) KB)", color: Colors.green)
+                print("  ✓ \(filename) (\(sizeKB) KB)", color: Colors.green)
             } else {
-                print("  ✓ \(library.filename)", color: Colors.green)
+                print("  ✓ \(filename)", color: Colors.green)
             }
         } else {
-            print("  ✗ \(library.filename) missing", color: Colors.red)
+            print("  ✗ \(filename) missing from Nova Resources", color: Colors.red)
             allFound = false
         }
     }
 
     if !allFound {
         print("")
-        print("Run 'sudo swift patch-nova.swift install' to install missing libraries", color: Colors.yellow)
+        print("Run 'sudo swift patch-nova.swift install' to copy bundles to Nova", color: Colors.yellow)
     }
 }
 
@@ -642,7 +650,7 @@ func cmdUpdate() {
     do {
         let _ = try downloadExtensions(to: resources)
         print("")
-        print("✓ Updated highlight.js successfully", color: Colors.green)
+        print("✓ Updated starry-night libraries successfully", color: Colors.green)
         print("")
         print("Note: Restart Nova for changes to take effect.", color: Colors.yellow)
     } catch {

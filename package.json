@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "@wooorm/starry-night": "^3.9.0",
+    "esbuild": "^0.27.3",
+    "hast-util-to-html": "^9.0.5"
+  }
+}
