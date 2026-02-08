@@ -464,15 +464,16 @@ func cmdInstall() {
         print("")
 
         let scriptPath = URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+        let libPath = scriptPath.appendingPathComponent("lib")
         let filesToCopy = ["starry-night-bundle.js", "starry-night.css"]
 
         for filename in filesToCopy {
-            let source = scriptPath.appendingPathComponent(filename)
+            let source = libPath.appendingPathComponent(filename)
             let dest = resources.appendingPathComponent(filename)
 
             guard FileManager.default.fileExists(atPath: source.path) else {
-                print("✗ \(filename) not found in script directory", color: Colors.red)
-                print("  Please ensure bundle files are in the same directory as patch-nova.swift", color: Colors.yellow)
+                print("✗ \(filename) not found in lib/ directory", color: Colors.red)
+                print("  Please ensure bundle files are in lib/ subdirectory", color: Colors.yellow)
                 exit(1)
             }
 

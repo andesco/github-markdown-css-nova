@@ -26,12 +26,12 @@ jobs:
 
           echo "Building IIFE bundle..."
           node build-bundle.mjs
-          mv starry-night-bundle.js ../starry-night-bundle.js
+          mv starry-night-bundle.js ../lib/starry-night-bundle.js
           cd ..
 
           echo "Downloading CSS..."
           curl -sL "https://esm.sh/@wooorm/starry-night@3/style/both.css" \
-            -o starry-night.css.new
+            -o lib/starry-night.css.new
 
           echo "Build complete"
 
@@ -41,8 +41,8 @@ jobs:
           CHANGED=false
 
           # Check bundle file
-          if [ -f "starry-night-bundle.js" ]; then
-            if ! cmp -s "starry-night-bundle.js" "starry-night-bundle.js" 2>/dev/null; then
+          if [ -f "lib/starry-night-bundle.js" ]; then
+            if ! cmp -s "lib/starry-night-bundle.js" "lib/starry-night-bundle.js" 2>/dev/null; then
               echo "Bundle was rebuilt"
               CHANGED=true
             fi
@@ -52,18 +52,18 @@ jobs:
           fi
 
           # Check CSS
-          if [ -f "starry-night.css" ]; then
-            if ! cmp -s "starry-night.css" "starry-night.css.new"; then
+          if [ -f "lib/starry-night.css" ]; then
+            if ! cmp -s "lib/starry-night.css" "lib/starry-night.css.new"; then
               echo "CSS updated"
               CHANGED=true
-              mv "starry-night.css.new" "starry-night.css"
+              mv "lib/starry-night.css.new" "lib/starry-night.css"
             else
-              rm "starry-night.css.new"
+              rm "lib/starry-night.css.new"
             fi
           else
             echo "New CSS file"
             CHANGED=true
-            mv "starry-night.css.new" "starry-night.css"
+            mv "lib/starry-night.css.new" "lib/starry-night.css"
           fi
 
           echo "changed=$CHANGED" >> $GITHUB_OUTPUT
@@ -73,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add starry-night-bundle.js starry-night.css scripts/package.json scripts/package-lock.json
+          git add lib/starry-night-bundle.js lib/starry-night.css scripts/package.json scripts/package-lock.json
           git commit -m "chore: rebuild starry-night bundle from latest upstream"
           git push
 
