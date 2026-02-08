@@ -21,10 +21,13 @@ jobs:
       - name: Install dependencies and rebuild bundle
         run: |
           echo "Installing dependencies..."
-          npm install --save-dev esbuild @wooorm/starry-night hast-util-to-html
+          cd scripts
+          npm install
 
           echo "Building IIFE bundle..."
           node build-bundle.mjs
+          mv starry-night-bundle.js ../starry-night-bundle.js
+          cd ..
 
           echo "Downloading CSS..."
           curl -sL "https://esm.sh/@wooorm/starry-night@3/style/both.css" \
@@ -70,7 +73,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add starry-night-bundle.js starry-night.css package.json package-lock.json
+          git add starry-night-bundle.js starry-night.css scripts/package.json scripts/package-lock.json
           git commit -m "chore: rebuild starry-night bundle from latest upstream"
           git push
 
