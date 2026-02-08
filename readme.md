@@ -38,29 +38,34 @@ Preview exactly how your Markdown and `readme.md` files will look on GitHub whil
       Light Tritanopia: `github-markdown-light_tritanopia.css`
     </details>
 
-## GitHub Markdown Alerts in Nova
+## GitHub Markdown Extensions for Nova
+
+The included Swift script extends Nova's Markdown preview with three powerful features:
+
+1. **GitHub Markdown Alerts** - Distinctive colored callouts with icons
+2. **Syntax Highlighting** - Beautiful code highlighting using highlight.js
+3. **Mermaid Diagrams** - Render flowcharts, sequence diagrams, and more
+
+### Installation
+
+The script downloads necessary JavaScript libraries and patches Nova's preview runtime:
+
+```bash
+sudo swift nova-markdown-extensions.swift install   # install all extensions (requires sudo)
+swift nova-markdown-extensions.swift status         # check installation status
+swift nova-markdown-extensions.swift update         # update libraries without re-patching
+sudo swift nova-markdown-extensions.swift restore   # restore original files from backups
+```
+
+**Note:** After installation, quit and relaunch Nova for changes to take effect.
+
+### GitHub Markdown Alerts
 
 [GitHub Markdown Alerts][alerts] are based on the blockquote syntax that emphasize critical information. They are displayed with distinctive colors and icons to indicate the significance of the content.
 
-### Patching Nova Preview to render Alerts
-
-Nova does not natively support Alerts when [previewing Markdown in Nova][nova-doc]:
-
 ```markdown
-<!--github markdown example-->
 > [!NOTE]
 > Example alert in Nova Preview.
-```
-
-> [‌!NOTE‌] Example alert in Nova Preview.
-
-
-The included Swift script patches `PreviewRuntime.js` and `ExternalWebRuntime.js` to render Alerts correctly.
-
-```bash
-swift nova-alerts.swift install   # install alert support (creates backups)
-swift nova-alerts.swift status    # check installation status
-swift nova-alerts.swift restore   # restore original files from backups
 ```
 
 ### Example Alerts
@@ -79,6 +84,36 @@ swift nova-alerts.swift restore   # restore original files from backups
 
 > [!CAUTION]
 > Advises about risks or negative outcomes of certain actions.
+
+### Syntax Highlighting
+
+Code blocks are automatically highlighted with syntax-aware coloring that adapts to your system's dark/light mode:
+
+````markdown
+```javascript
+function greet(name) {
+  console.log(`Hello, ${name}!`);
+}
+```
+````
+
+Supports 100+ languages including JavaScript, Python, TypeScript, Swift, Go, Rust, and more.
+
+### Mermaid Diagrams
+
+Create flowcharts, sequence diagrams, and other visualizations directly in Markdown:
+
+````markdown
+```mermaid
+graph TD
+  A[Start] --> B{Is it working?}
+  B -->|Yes| C[Great!]
+  B -->|No| D[Debug]
+  D --> A
+```
+````
+
+Mermaid diagrams automatically adapt to dark/light mode. See [Mermaid documentation](https://mermaid.js.org/) for all diagram types.
 
 ## Development
 
