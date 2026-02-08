@@ -63,52 +63,59 @@ func generateExtensionCode(resourcesURL: URL) throws -> String {
     // Read library files and base64 encode them (except Mermaid - loaded from CDN when needed)
     // Sources:
     //   - highlight.js: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
-    //   - github.min.css: https://unpkg.com/@highlightjs/cdn-assets@11/styles/github.min.css
-    //   - github-dark.min.css: https://unpkg.com/@highlightjs/cdn-assets@11/styles/github-dark.min.css
+    //   - github-exact-light.css: Custom CSS with GitHub's exact Primer colors
+    //   - github-exact-dark.css: Custom CSS with GitHub's exact Primer colors
 
     let hljsData = try Data(contentsOf: resourcesURL.appendingPathComponent("highlight.min.js"))
     let hljsB64 = hljsData.base64EncodedString()
 
-    let githubCSSData = try Data(contentsOf: resourcesURL.appendingPathComponent("github.min.css"))
+    // Read custom GitHub exact CSS from script directory
+    let scriptDir = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    let githubCSSData = try Data(contentsOf: scriptDir.appendingPathComponent("github-exact-light.css"))
     let githubCSSB64 = githubCSSData.base64EncodedString()
 
-    let githubDarkCSSData = try Data(contentsOf: resourcesURL.appendingPathComponent("github-dark.min.css"))
+    let githubDarkCSSData = try Data(contentsOf: scriptDir.appendingPathComponent("github-exact-dark.css"))
     let githubDarkCSSB64 = githubDarkCSSData.base64EncodedString()
 
     return """
 
+    // NOVA EXTENSIONS MANIFEST
+    // Version: 1.1.0
+    // Extensions: alerts, highlight.js, mermaid
+    // Embedded: highlight.js, github-exact-light.css, github-exact-dark.css
+    // CDN: mermaid (loaded conditionally)
+    // Colors: GitHub's exact Primer Primitives (2026)
+    // Installed: \(ISO8601DateFormatter().string(from: Date()))
+
     // Mermaid & Syntax Highlighting Extension
-    // Embedded libraries (base64):
+    // Embedded libraries (base64 data URLs):
     //   - highlight.js v11: https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js
-    //   - GitHub CSS (light): https://unpkg.com/@highlightjs/cdn-assets@11/styles/github.min.css
-    //   - GitHub CSS (dark): https://unpkg.com/@highlightjs/cdn-assets@11/styles/github-dark.min.css
+    //   - GitHub Exact Light CSS: Custom CSS with Primer color scales
+    //   - GitHub Exact Dark CSS: Custom CSS with Primer color scales
     // CDN libraries (loaded when needed):
     //   - Mermaid v11: https://unpkg.com/mermaid@11/dist/mermaid.min.js
     (function() {
         function loadExtensions() {
             var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Decode and inject CSS (embedded)
-            var cssB64 = isDark ? '\(githubDarkCSSB64)' : '\(githubCSSB64)';
-            var css = atob(cssB64);
-            var style = document.createElement('style');
-            style.textContent = css;
-            document.head.appendChild(style);
+            // Inject CSS using data URL (embedded)
+            var cssLink = document.createElement('link');
+            cssLink.rel = 'stylesheet';
+            cssLink.href = 'data:text/css;base64,' + (isDark ? '\(githubDarkCSSB64)' : '\(githubCSSB64)');
+            document.head.appendChild(cssLink);
 
-            // Decode and inject highlight.js (embedded)
-            var hljsCode = atob('\(hljsB64)');
+            // Inject highlight.js using data URL (embedded)
             var hljsScript = document.createElement('script');
-            hljsScript.textContent = hljsCode;
-            document.head.appendChild(hljsScript);
-
-            setTimeout(function() {
+            hljsScript.src = 'data:text/javascript;base64,\(hljsB64)';
+            hljsScript.onload = function() {
                 if (window.hljs) {
                     hljs.configure({ ignoreUnescapedHTML: true });
                     document.querySelectorAll('pre code:not(.language-mermaid)').forEach(function(block) {
                         hljs.highlightElement(block);
                     });
                 }
-            }, 50);
+            };
+            document.head.appendChild(hljsScript);
 
             // Load Mermaid from CDN only if page contains mermaid code blocks
             var mermaidBlocks = document.querySelectorAll('code.language-mermaid');
@@ -137,6 +144,7 @@ func generateExtensionCode(resourcesURL: URL) throws -> String {
                 document.head.appendChild(mermaidScript);
             }
         }
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', loadExtensions);
         } else {
@@ -155,14 +163,6 @@ let libraries: [Library] = [
     Library(
         url: "https://unpkg.com/@highlightjs/cdn-assets@11/highlight.min.js",
         filename: "highlight.min.js"
-    ),
-    Library(
-        url: "https://unpkg.com/@highlightjs/cdn-assets@11/styles/github.min.css",
-        filename: "github.min.css"
-    ),
-    Library(
-        url: "https://unpkg.com/@highlightjs/cdn-assets@11/styles/github-dark.min.css",
-        filename: "github-dark.min.css"
     )
 ]
 
@@ -472,7 +472,7 @@ func cmdInstall() {
     }
 
     guard FileManager.default.isWritableFile(atPath: previewRuntime.path) else {
-        print("✗ No write permission. Try: sudo swift nova-markdown-extensions.swift install", color: Colors.red)
+        print("✗ No write permission. Try: sudo swift patch-nova.swift install", color: Colors.red)
         exit(1)
     }
 
@@ -482,7 +482,7 @@ func cmdInstall() {
         print("")
         let _ = try downloadExtensions(to: resources)
         print("")
-        print("✓ Downloaded and will embed 3 libraries (Mermaid loaded from CDN when needed)", color: Colors.green)
+        print("✓ Downloaded highlight.js (GitHub exact CSS embedded, Mermaid loaded from CDN when needed)", color: Colors.green)
         print("")
     } catch {
         print("✗ Failed to download libraries: \(error.localizedDescription)", color: Colors.red)
@@ -606,7 +606,7 @@ func cmdStatus() {
 
     if !allFound {
         print("")
-        print("Run 'sudo swift nova-markdown-extensions.swift install' to install missing libraries", color: Colors.yellow)
+        print("Run 'sudo swift patch-nova.swift install' to install missing libraries", color: Colors.yellow)
     }
 }
 
@@ -642,7 +642,7 @@ func cmdUpdate() {
     do {
         let _ = try downloadExtensions(to: resources)
         print("")
-        print("✓ Updated 3 libraries successfully", color: Colors.green)
+        print("✓ Updated highlight.js successfully", color: Colors.green)
         print("")
         print("Note: Restart Nova for changes to take effect.", color: Colors.yellow)
     } catch {
@@ -653,7 +653,7 @@ func cmdUpdate() {
 
 func cmdHelp() {
     print("""
-    nova-markdown-extensions.swift - GitHub Markdown Extensions for Nova.app
+    patch-nova.swift - GitHub Markdown Extensions for Nova.app
 
     Adds support for:
       • GitHub Markdown Alerts (> [!NOTE], > [!TIP], etc.)
@@ -661,7 +661,7 @@ func cmdHelp() {
       • Mermaid diagram rendering
 
     Usage:
-      swift nova-markdown-extensions.swift <command>
+      swift patch-nova.swift <command>
 
     Commands:
       install   Install all extensions (requires sudo, creates backups first)
@@ -671,10 +671,10 @@ func cmdHelp() {
       help      Show this help message
 
     Examples:
-      sudo swift nova-markdown-extensions.swift install
-      sudo swift nova-markdown-extensions.swift restore
-      swift nova-markdown-extensions.swift update
-      swift nova-markdown-extensions.swift status
+      sudo swift patch-nova.swift install
+      sudo swift patch-nova.swift restore
+      swift patch-nova.swift update
+      swift patch-nova.swift status
 
     Supported features:
 
